@@ -17,6 +17,8 @@ public class dbFunction {
 	public String fileNameInformation="Information.mdb";
 	public String fileNameAttributes="Attributes.mdb";
 	public String fileNameTable="Table.mdb";
+	public String[] records=new String[1000];
+	public common_functions commonFunctions=new common_functions();
 	
 	public String displayFunctionsMenu()
 	{
@@ -35,7 +37,7 @@ public class dbFunction {
 				"q. Quit DB" +
 				"\n\n" +
 				"<------------------------------->\n");
-		System.out.println("Please input a, b, c, d or q: ");
+		System.out.print("Please input a, b, c, d or q: ");
 		String input_record=input.nextLine();
 		
 		return input_record;
@@ -48,19 +50,30 @@ public class dbFunction {
 		
 		System.out.print("Please input record's name: ");
 		String recordName=getRecordName.nextLine();
+		File checkexists=new File(fileInformation+recordName+fileNameInformation);
 		
-		this.CreateFile(fileInformation, recordName, fileNameInformation);
-		this.CreateFile(fileAttributes, recordName, fileNameAttributes);
-		this.CreateFile(fileTable, recordName, fileNameTable);
+		if (!checkexists.exists())
+		{	
+			record.initNewRecord(recordName);
+			this.CreateFile(fileInformation, recordName, fileNameInformation);
+			this.CreateFile(fileAttributes, recordName, fileNameAttributes);
+			this.CreateFile(fileTable, recordName, fileNameTable);
+			record.loadRecord(recordName);
+			record.updateRecordInformation();
+		}
 		
-		record.initNewRecord();
+		commonFunctions.clearscreen();
 	}
 	
 	public void enterRecord()
 	{
 		recordFunctions record=new recordFunctions();
 		
-		record.loadRecord();
+		System.out.print("Please enter record's name: ");
+		Scanner enterRecordInput=new Scanner(System.in);
+		String enterrecordInput=enterRecordInput.nextLine();
+		record.loadRecord(enterrecordInput);
+		
 		System.out.println("You have already load selected record" +
 				"\n" +
 				"Here is the function menu:" +
@@ -75,11 +88,13 @@ public class dbFunction {
 			case 'a' :
 			case 'A' :
 			{
+				record.updateRecordInformation();
 				break;
 			}
 			case 'b' :
 			case 'B' :
 			{
+				
 				break;
 			}
 			case 'c' :
@@ -115,7 +130,8 @@ public class dbFunction {
 			case 'q' :
 			case 'Q' :
 			{
-				break;
+				commonFunctions.clearscreen();
+				return;
 			}
 			default :
 			{
@@ -126,24 +142,125 @@ public class dbFunction {
 		
 	}
 	
-	public void dispalyRecordMenu()
+	public void displayRecordMenu()
 	{
-		//create a file to store menu.
+		Scanner displayRecord=null;
+		
+		try
+		{
+			displayRecord=new Scanner(new File(fileMainFolder+fileMenu));
+		}
+		catch (Exception e)
+		{
+			System.out.println("File not existed or no enough right to read!");
+			System.exit(1);
+		}
+		
+		while (displayRecord.hasNextLine())
+		{
+			System.out.println(displayRecord.nextLine());
+		}
+		
+		commonFunctions.pressContinue();
+		commonFunctions.clearscreen();
+		
 	}
 	
 	public void deleteExsitedRecord()
 	{
 		//just delete all related file.
+		Scanner existedRecordInput=new Scanner(System.in);
+		System.out.print("Please input the records name you want to delete: ");
+		String existedRecordName=existedRecordInput.nextLine();
+		System.out.print("Are you sure? (Yes: Y; No: N): ");
+		String yesno=existedRecordInput.nextLine();
+		
+		if (yesno.equalsIgnoreCase("N"))
+		{
+		}
+		else if (yesno.equalsIgnoreCase("Y"))
+		{
+			String existedRecordAttributes=fileAttributes+existedRecordName+fileNameAttributes;
+			String existedRecordInformation=fileInformation+existedRecordName+fileNameInformation;
+			String existedRecordTable=fileTable+existedRecordName+fileNameTable;
+			
+			File eRAttributes=new File(existedRecordAttributes);
+			File eRInformation=new File(existedRecordInformation);
+			File eRTable=new File(existedRecordTable);
+			
+			try
+			{
+				eRAttributes.delete();
+				eRInformation.delete();
+				eRTable.delete();
+			}
+			catch (Exception e)
+			{
+				System.out.println("No enough right to delete");
+				System.exit(1);
+			}
+			deleteRecordfromMenu(existedRecordName);
+			System.out.println("Record is deleted successfully.");
+		}
+		else System.out.println("Illegal input.");
+		
+		commonFunctions.pressContinue();
+		commonFunctions.clearscreen();
+	}
+	
+	public void deleteRecordfromMenu(String recordName)
+	{
+		Scanner recordsRead=null;
+		PrintWriter recordsWrite=null;
+		
+		try
+		{
+			recordsRead=new Scanner(new File(fileMainFolder+fileMenu));
+		}
+		catch (Exception e)
+		{
+			System.out.println("No such file or no enough right to read.");
+			System.exit(1);
+		}
+		
+		int n=0;
+		while (recordsRead.hasNextLine())
+		{
+			String r=recordsRead.nextLine();
+			if (!r.equals(recordName))
+			{
+				records[n]=r;
+				n++;
+			}
+		}
+		recordsRead.close();
+		
+		try
+		{
+			recordsWrite=new PrintWriter(new File(fileMainFolder+fileMenu));
+		}
+		catch (Exception e)
+		{
+			System.out.println("No enough right to write.");
+			System.exit(1);
+		}
+		
+		for (int i=0;records[i]!=null;i++)
+		{
+			recordsWrite.println(records[i]);
+		}
+		recordsWrite.close();
 	}
 	
 	public void quitDb()
 	{
-		System.out.println("Quit? Really? (Y: Yes; N: No):");
+		System.out.print("Quit? Really? (Y: Yes; N: No): ");
 		Scanner input=new Scanner(System.in);
 		String input_record=input.nextLine();
 		
 		if (!input_record.equalsIgnoreCase("Y"))
 		{
+			commonFunctions.clearscreen();
 			return;
 		}
 		else if (!input_record.equalsIgnoreCase("N"))
@@ -232,14 +349,17 @@ public class dbFunction {
 		if (createFile.exists())
 		{
 		}
-		try
+		else
 		{
-			createFile.createNewFile();
-		}
-		catch (Exception e)
-		{
-			System.out.println("Please check you have righ to write");
-			System.exit(1);
+			try
+			{
+				createFile.createNewFile();
+			}
+			catch (Exception e)
+			{
+				System.out.println("Please check you have righ to write");
+				System.exit(1);
+			}			
 		}
 	}
 }

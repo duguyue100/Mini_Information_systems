@@ -35,7 +35,7 @@ public class Information_system_main {
 			case 'c' :
 			case 'C' :
 			{
-				function.dispalyRecordMenu();
+				function.displayRecordMenu();
 				break;
 			}
 			case 'd' :
